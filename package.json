@@ -4,9 +4,9 @@
   "private": true,
   "description": "A local-model chat interface. Next.js App Router, AsheeUI 2.0.0, Tailwind v4. The browser talks to this app; this app talks straight to a model running on this machine. Nothing leaves the host.",
   "scripts": {
-    "dev": "next dev -p 3100",
+    "dev": "PORT=$(node ../scripts/port-sync.mjs ashee-chat 3100 127.0.0.1); export PORT; next dev -p \"$PORT\"",
     "build": "next build",
-    "start": "next start -p 3100",
+    "start": "PORT=$(node ../scripts/port-sync.mjs ashee-chat 3100 127.0.0.1); export PORT; next start -p \"$PORT\"",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
