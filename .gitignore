@@ -1,0 +1,23 @@
+# Dependencies and build output. Never source.
+node_modules/
+.next/
+out/
+build/
+next-env.d.ts
+
+# The environment. A host, a port and a token would live here, and none of them belong in
+# a repository. `.env.example` is committed instead and carries keys with empty values, so
+# the shape of the configuration is documented without any of its contents being published.
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system scratch.
+.DS_Store
+*.swp
+*.log
+.vscode/
+.idea/
+
+# TypeScript's incremental state.
+*.tsbuildinfo
