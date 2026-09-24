@@ -1,0 +1,104 @@
+# The checks this repository can run by itself.
+#
+# ## What runs, and what cannot
+#
+# **`typecheck`** — `tsc --noEmit`, verified clean. It is the only check this application declares
+# that currently works.
+#
+# **The leak audit** — its questions are about *this* repository, so it runs here. The script lives
+# in the harness repository and is cloned rather than copied, so there is one copy that cannot
+# drift instead of three that can. That repository is public, which is what makes the clone
+# possible; if it is ever made private, this job needs a token.
+#
+# **`lint` is deliberately absent, and the reason is that it does not work.** The script is
+# `next lint`, which Next 16 removed:
+#
+#     $ bun run lint
+#     Invalid project directory provided, no such directory: .../ashee-chat/lint
+#     error: script "lint" exited with code 1
+#
+# Measured 2026-09-24. Adding it here would produce a permanently red job that says nothing about
+# the code. The honest repair is to add ESLint and a real script, or to delete `lint` from
+# package.json — either is a decision, and a workflow is not the place to make it.
+#
+# **The install is frozen.** `bun install --frozen-lockfile` was verified to pass against the
+# committed `bun.lock` (62 installs across 130 packages, no changes), so a build that depends on a
+# package the lockfile does not name will fail here rather than on somebody's machine. Note there is
+# also a `package-lock.json` in this repository; only `bun.lock` is verified current, and two
+# lockfiles are two candidate answers to the same question.
+
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "31 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The leak audit walks every reachable commit; a shallow clone would make that question
+          # answer "none" about a history it never read.
+          fetch-depth: 0
+
+      - name: the leak audit script, one copy of it
+        # Cloned **outside** the repository: the audit greps its root for the account name, the
+        # links and the secrets, and a clone at `.harness/` inside the tree would be part of that
+        # root — the harness repository's own prose audited as though it were this repository's.
+        run: git clone --depth=1 https://github.com/Ashee-Softworks/asheeas-harness.git /tmp/ashee-harness
+
+      - name: the leak audit
+        run: sh /tmp/ashee-harness/leak-audit.sh .
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json requires >=22.12.0.
+          node-version: "22"
+
+      - name: install bun
+        # The install script from bun's own site, which is how this project's Dockerfiles already
+        # get it — rather than a third-party action whose major version would be a guess.
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: dependencies, frozen to the lockfile
+        # Before and after, so the step proves more than "the command exited 0": a frozen install
+        # that silently rewrote a lockfile would be a failure dressed as a success, and that is the
+        # one thing --frozen-lockfile is supposed to make impossible.
+        run: |
+          before="$(git status --porcelain)"
+          bun install --frozen-lockfile
+          after="$(git status --porcelain)"
+          if [ "$before" != "$after" ]; then
+            echo "the install changed the working tree:"
+            diff <(printf '%s\n' "$before") <(printf '%s\n' "$after") || true
+            exit 1
+          fi
+          echo "  the lockfile and the tree are as they were"
+
+      - name: types
+        run: bun run typecheck
+
+      - name: what this run did not check
+        run: |
+          cat <<'EOF'
+          Ran: the leak audit, a frozen install, and the type check.
+
+          Not run, and each is a gap rather than a pass:
+            * lint        -- `next lint` no longer exists in Next 16; the script fails on its own.
+                             See the note at the top of this file.
+            * next build  -- building is worth doing, and it is the next thing to add here
+            * the model   -- this application talks to a model host on the machine it runs on. There
+                             is no host in CI, so nothing here exercises a single request path.
+          EOF

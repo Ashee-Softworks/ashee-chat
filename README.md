@@ -92,3 +92,22 @@ worth stating plainly, because both are load-bearing:
    persistence in the project, and it is `localStorage`.
 2. **The route handlers hold no state between requests.** They read `OLLAMA_HOST`, stream one
    answer, and forget it. Nothing is logged.
+
+## Licence
+
+**BSD Zero Clause License** (`0BSD`) — Copyright (C) 2026 Ashee Softworks. The licence is five
+lines, and the whole grant is one sentence of it in [`LICENSE`](LICENSE):
+
+> Permission to use, copy, modify, and/or distribute this software for any purpose with or
+> without fee is hereby granted.
+
+That is everything. No attribution is required, no changes have to be published, and anyone who
+takes a copy may close it, relicense it and sell it. It is deliberately the most permissive
+licence there is — the one Google uses for code it wants people to use without thinking about
+terms — which is why there is nothing on this page telling you what you must do.
+
+**Changed on 2026-09-24.** Before that this repository carried `PROPRIETARY AND CONFIDENTIAL —
+ALL RIGHTS RESERVED / NO LICENSE IS GRANTED`, and **that wording remains in every commit before
+the change**: a later commit does not unpublish it. An open grant cannot be recalled either, so
+every copy taken under 0BSD stays free, for anyone, for good. Both directions are permanent.
+
